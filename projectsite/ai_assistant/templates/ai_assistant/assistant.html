@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light p-3">
+    <div class="container max-width-600 bg-white p-4 rounded shadow-sm" style="max-width: 600px;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="m-0">🎓 AI ASSISTANT</h4>
+            <div id="offline-status" class="badge bg-danger d-none">Offline Mode</div>
+        </div>
+
+        <div id="chat-box" class="border p-3 mb-3 bg-light rounded" style="height: 350px; overflow-y: auto;">
+            <p class="text-muted">Ready to explore today's science prompt? You can ask me any question to help with your worksheet.</p>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="user-input" class="form-control" placeholder="Ask a question for class..." onkeypress="handleKeyPress(event)">
+            <button id="send-btn" class="btn btn-dark" onclick="sendPrompt()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendPrompt();
+            }
+        }
+
+        async function sendPrompt() {
+            const input = document.getElementById('user-input');
+            const chatBox = document.getElementById('chat-box');
+            const sendBtn = document.getElementById('send-btn');
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            chatBox.innerHTML += `<div class="text-end mb-2"><strong>YOU:</strong> ${prompt}</div>`;
+            input.value = '';
+
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+
+            try {
+                const res = await fetch('', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+                const data = await res.json();
+
+                if (data.reply) {
+                    const formattedReply = marked.parse(data.reply);
+                    chatBox.innerHTML += `<div class="text-start mb-2"><strong>CLASS ASSISTANT:</strong> ${formattedReply}</div>`;
+                    
+                    if (window.renderMathInElement) {
+                        renderMathInElement(chatBox, {
+                            delimiters: [
+                                {left: '$$', right: '$$', display: true},
+                                {left: '$', right: '$', display: false}
+                            ]
+                        });
+                    }
+                } else {
+                    chatBox.innerHTML += `<div class="text-danger mb-2">Error: ${data.error}</div>`;
+                }
+            } catch (err) {
+                chatBox.innerHTML += `<div class="text-danger mb-2">Network error. Check your connection.</div>`;
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerText = 'Send';
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+
+        window.addEventListener('offline', () => document.getElementById('offline-status').classList.remove('d-none'));
+        window.addEventListener('online', () => document.getElementById('offline-status').classList.add('d-none'));
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js');
+        }
+    </script>
+</body>
+</html>
