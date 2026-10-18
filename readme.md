@@ -1,1 +1,1 @@
-# OPENWEATHER API
+# AI Assistant Web Application with PWA Configuration
