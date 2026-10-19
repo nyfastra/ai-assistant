@@ -17,17 +17,11 @@ def assistant_view(request):
                 return JsonResponse({"error": "Gemini API key is missing in .env"}, status=500)
 
             client = genai.Client(api_key=api_key)
-            
-            try:
-                response = client.models.generate_content(
-                    model="gemini-3.8-flash",
-                    contents=user_prompt,
-                )
-            except Exception:
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=user_prompt,
-                )
+
+            response = client.models.generate_content(
+                model="gemini-3.8-flash",
+                contents=user_prompt,
+            )
 
             reply_text = ""
             if hasattr(response, 'text') and response.text:
